@@ -8,9 +8,10 @@ cursor.execute("pragma foreign_keys = on")
 
 schema_queries = [
     '''create table if not exists user (
-        user_id integer primary key,
+        user_id integer primary key autoincrement,
         username text,
         email text,
+        fullname text,
         password_hash text,
         role text,
         joining_date text,
@@ -18,12 +19,12 @@ schema_queries = [
         foreign key (wallet_id) references wallet(wallet_id)
     )''',
     '''create table if not exists admin (
-        admin_id integer primary key,
+        admin_id integer primary key autoincrement,
         user_id integer,
         foreign key (user_id) references user(user_id)
     )''',
     '''create table if not exists trainer (
-        trainer_id integer primary key,
+        trainer_id integer primary key autoincrement,
         specializes_in text,
         experience integer,
         weight real,
@@ -33,7 +34,7 @@ schema_queries = [
         foreign key (user_id) references user(user_id)
     )''',
     '''create table if not exists member (
-        member_id integer primary key,
+        member_id integer primary key autoincrement,
         target text,
         height real,
         weight real,
@@ -41,24 +42,24 @@ schema_queries = [
         foreign key (user_id) references user(user_id)
     )''',
     '''create table if not exists exercise (
-        exercise_id integer primary key,
+        exercise_id integer primary key autoincrement,
         exercise_detail text,
         sets integer,
         reps integer,
         calorie_burn integer
     )''',
     '''create table if not exists food (
-        food_id integer primary key,
+        food_id integer primary key autoincrement,
         food_detail text,
         quantity text,
         calorie_gain integer
     )''',
     '''create table if not exists wallet (
-        wallet_id integer primary key,
+        wallet_id integer primary key autoincrement,
         balance real
     )''',
     '''create table if not exists post (
-        post_id integer primary key,
+        post_id integer primary key autoincrement,
         post_body text,
         user_id integer,
         creation_time text,
@@ -66,7 +67,7 @@ schema_queries = [
         foreign key (user_id) references user(user_id)
     )''',
     '''create table if not exists comment (
-        comment_id integer primary key,
+        comment_id integer primary key autoincrement,
         comment_body text,
         posting_time text,
         user_id integer,
@@ -75,21 +76,21 @@ schema_queries = [
         foreign key (post_id) references post(post_id)
     )''',
     '''create table if not exists topup (
-        topup_id integer primary key,
+        topup_id integer primary key autoincrement,
         wallet_id integer,
         topup_amount real,
         topup_time text,
         foreign key (wallet_id) references wallet(wallet_id)
     )''',
     '''create table if not exists payout (
-        payout_id integer primary key,
+        payout_id integer primary key autoincrement,
         wallet_id integer,
         payout_amount real,
         payout_time text,
         foreign key (wallet_id) references wallet(wallet_id)
     )''',
     '''create table if not exists withdrawal (
-        withdrawal_id integer primary key,
+        withdrawal_id integer primary key autoincrement,
         wallet_id integer,
         withdrawal_amount real,
         withdrawal_time text,
@@ -108,7 +109,7 @@ schema_queries = [
         foreign key (member_id) references member(member_id)
     )''',
     '''create table if not exists diet_info (
-        diet_id integer primary key,
+        diet_id integer primary key autoincrement,
         food_id integer,
         member_id integer,
         foreign key (food_id) references food(food_id),
@@ -121,7 +122,7 @@ schema_queries = [
         foreign key (trainer_id) references trainer(trainer_id)
     )''',
     '''create table if not exists payment (
-        payment_id integer primary key,
+        payment_id integer primary key autoincrement,
         admin_id integer,
         trainer_id integer,
         amount real,
@@ -129,7 +130,7 @@ schema_queries = [
         foreign key (trainer_id) references trainer(trainer_id)
     )''',
     '''create table if not exists training_session (
-        session_id integer primary key,
+        session_id integer primary key autoincrement,
         trainer_id integer,
         member_id integer,
         session_length integer,
