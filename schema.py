@@ -31,6 +31,7 @@ schema_queries = [
         award text,
         height real,
         user_id integer,
+        verified text,
         foreign key (user_id) references user(user_id)
     )''',
     '''create table if not exists member (
@@ -134,6 +135,7 @@ schema_queries = [
         trainer_id integer,
         member_id integer,
         session_length integer,
+        is_complete text,
         foreign key (trainer_id) references trainer(trainer_id),
         foreign key (member_id) references member(member_id)
     )''',

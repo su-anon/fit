@@ -39,7 +39,10 @@ def index():
     role = session.get("role")
 
     if role=="ADMIN":
-        return render_template("home-admin.html")
+        with sqlite3.connect(DB_NAME) as connection:
+            connection.row_factory = sqlite3.Row
+            trainer_applications = connection.execute("select trainer.*, user.fullname from trainer left join user on trainer.user_id=user.user_id where verified='pending'").fetchall()
+            return render_template("home-admin.html", trainers=trainer_applications)
     elif role=="TRAINER":
         return render_template("home-trainer.html")
     elif role=="MEMBER":
@@ -67,7 +70,6 @@ def register():
         weight = request.form.get("weight")
         with sqlite3.connect(DB_NAME) as connection:
             connection.execute("insert into member (target, height, weight, user_id) values (?, ?, ?, ?)", (target, height, weight, userid))
-            print(connection.execute("select * from member where user_id = ?", (userid,)).fetchone())
         return redirect(url_for("login"))
 
 @app.route("/regtrainer", methods=["GET", "POST"])
@@ -86,21 +88,30 @@ def regtrainer():
         fullname = request.form.get("fullname")
         password = request.form.get("password")
         userid = create_user(username, email, fullname, password, "TRAINER")
-        specializes_in = request.form.get("specializes_in ")
+        specializes_in = request.form.get("specializes_in")
         experience = request.form.get("experience")
         weight = request.form.get("weight")
         height = request.form.get("height")
         award = request.form.get("award")
-        
-        specializes_in = request.form.get("specializes_in ")
 
         with sqlite3.connect(DB_NAME) as connection:
-            connection.execute("insert into trainer (specializes_in, experience, weight, award, height, user_id) values (?, ?, ?, ?, ?, ?)", (specializes_in, experience, weight, height, award, userid))
-            print(connection.execute("select * from trainer where user_id = ?", (userid,)).fetchone())
+            connection.execute("insert into trainer (specializes_in, experience, weight, award, height, verified, user_id) values (?, ?, ?, ?, ?, ?, ?)", (specializes_in, experience, weight, award, height, "pending", userid))
         return redirect(url_for("login"))
 
+@app.route('/approve/<int:trainer_id>', methods=['POST'])
+def approve_trainer(trainer_id):
+    with sqlite3.connect(DB_NAME) as connection:
+        connection.execute("update trainer set verified='verified' where trainer_id=?", (trainer_id,))
+        name, = connection.execute("select username from trainer left join user on trainer.user_id=user.user_id where trainer_id=?", (trainer_id,)).fetchone()
+        print(name)
+    return f'<div class="bg-green-100 text-green-800 p-4 rounded-lg shadow">✅ Trainer @{name} has been approved.</div>'
 
-
+@app.route('/reject/<int:trainer_id>', methods=['POST'])
+def reject_trainer(trainer_id):
+    with sqlite3.connect(DB_NAME) as connection:
+        connection.execute("update trainer set verified='rejected' where trainer_id=?", (trainer_id,))
+        name, = connection.execute("select username from trainer left join user on trainer.user_id=user.user_id where trainer_id=?", (trainer_id,)).fetchone()
+    return f'<div class="bg-red-100 text-red-800 p-4 rounded-lg shadow">❌ Trainer @{name} has been rejected.</div>'
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
@@ -129,13 +140,19 @@ def login():
                 member_id, = connection.execute("select member_id from member where user_id=?", (user_id,)).fetchone()
                 session["member_id"]=member_id
             elif role=="TRAINER":
-                trainer_id, = connection.execute("select trainer_id from trainer where user_id=?", (user_id,)).fetchone()
-                session["trainer_id"]=trainer_id
+                trainer_id, verified = connection.execute("select trainer_id, verified from trainer where user_id=?", (user_id,)).fetchone()
+                if verified=="pending":
+                    session.clear()
+                    return "Please wait till an admin approves your application."
+                elif verified=="rejected":
+                    session.clear()
+                    return "Your application has been rejected by the admins."
+                elif verified=="verified":
+                    session["trainer_id"]=trainer_id
             elif role=="ADMIN":
                 admin_id, = connection.execute("select admin_id from admin where user_id=?", (user_id,)).fetchone()
                 session["admin_id"]=admin_id
 
-            print(session)
             return redirect(url_for("index"))
 
         else:
@@ -143,6 +160,8 @@ def login():
 
 @app.route("/record", methods=["GET", "POST"])
 def record():
+    if not session.get("role")=="MEMBER":
+        return "Not authorized"
     if request.method=="GET":
         if not session.get("username"):
             return render_template("login.html")
@@ -162,7 +181,6 @@ def add_record():
     record_type = request.form.get("type")
     item = request.form.get("item")
     
-    print(f"Added {record_type}: {item}")
 
     
     return '<span class="text-sm text-green-600">Added</span>'

@@ -1,5 +1,6 @@
 import sqlite3
 import schema
+import newadmin
 
 exercises = [
     ("Morning Jog", 1, 1, 200),
