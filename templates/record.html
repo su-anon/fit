@@ -74,8 +74,8 @@
         {% for diet in diets %}
         <div class="bg-white p-4 rounded-lg shadow flex flex-col justify-between">
           <div>
-            <h3 class="text-lg font-semibold text-gray-800">{{ diet.name }}</h3>
-            <p class="text-sm text-gray-600 mt-1">{{ diet.desc }}</p>
+            <h3 class="text-lg font-semibold text-gray-800">{{ diet.detail }}</h3>
+            <p class="text-sm text-gray-600 mt-1">{{diet.quantity}} · {{diet.calories}} kcal</p>
           </div>
           <div id="diet-btn-{{ loop.index }}" class="mt-4">
             <button 
@@ -102,8 +102,8 @@
         {% for workout in workouts %}
         <div class="bg-white p-4 rounded-lg shadow flex flex-col justify-between">
           <div>
-            <h3 class="text-lg font-semibold text-gray-800">{{ workout.name }}</h3>
-            <p class="text-sm text-gray-600 mt-1">{{ workout.desc }}</p>
+            <h3 class="text-lg font-semibold text-gray-800">{{ workout.detail }}</h3>
+            <p class="text-sm text-gray-600 mt-1">{{workout.sets}} sets · {{workout.reps}} reps · {{workout.calories}} kcal burns</p>
           </div>
           <div id="exercise-btn-{{ loop.index }}" class="mt-4">
             <button 

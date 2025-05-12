@@ -39,6 +39,8 @@ schema_queries = [
         target text,
         height real,
         weight real,
+        take_goal real,
+        burn_goal real,
         user_id integer,
         foreign key (user_id) references user(user_id)
     )''',
@@ -106,6 +108,7 @@ schema_queries = [
     '''create table if not exists exercise_info (
         exercise_id integer,
         member_id integer,
+        timestamp text,
         foreign key (exercise_id) references exercise(exercise_id),
         foreign key (member_id) references member(member_id)
     )''',
@@ -113,6 +116,7 @@ schema_queries = [
         diet_id integer primary key autoincrement,
         food_id integer,
         member_id integer,
+        timestamp text,
         foreign key (food_id) references food(food_id),
         foreign key (member_id) references member(member_id)
     )''',

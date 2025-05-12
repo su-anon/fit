@@ -22,14 +22,44 @@ def create_user(username, email, fullname, password, role):
     password_hash = bcrypt.hashpw(password.encode(), bcrypt.gensalt());
     with sqlite3.connect(DB_NAME) as connection:
         connection.execute("insert into user (username, email, fullname, password_hash, role, joining_date) values (?, ?, ?, ?, ?, ?)",
-                           (username, email, fullname, password_hash, role, datetime.datetime.now(),))
+                           (username, email, fullname, password_hash, role, datetime.datetime.now().isoformat(),))
         userid = connection.execute("select user_id from user where user.username=?", (username,)).fetchone()[0]
         cursor = connection.execute("insert into wallet (balance) values (?)", (0,))
         wallet_id = cursor.lastrowid
-        connection.execute("insert into user (wallet_id) values (?)",str(wallet_id))
-        connection.execute("select * from user left join wallet where username=?", (username,)).fetchone()
+        connection.execute("update user set wallet_id=? where user_id=?", (wallet_id, userid))
 
     return userid
+
+def get_leaderboard():
+    with sqlite3.connect(DB_NAME) as connection:
+        gain_leaderboard = connection.execute("""
+                                              select username, sum(food.calorie_gain) as gain
+                                              from
+                                              diet_info
+                                              left join food on food.food_id=diet_info.food_id
+                                              left join member on member.member_id=diet_info.member_id
+                                              left join user on user.user_id=member.user_id
+                                              where date(timestamp)=date('now', 'localtime')
+                                              group by username
+                                              order by gain desc
+                                              limit 10 offset 0
+                                              """).fetchall()
+        burn_leaderboard = connection.execute("""
+                                              select username, sum(exercise.calorie_burn) as burn
+                                              from
+                                              exercise_info
+                                              left join exercise on exercise.exercise_id=exercise_info.exercise_id
+                                              left join member on member.member_id=exercise_info.member_id
+                                              left join user on user.user_id=member.user_id
+                                              where date(timestamp)=date('now', 'localtime')
+                                              group by username
+                                              order by burn desc
+                                              limit 10 offset 0
+                                              """).fetchall()
+        return gain_leaderboard, burn_leaderboard
+
+
+
 
 @app.route("/", methods=["GET"])
 def index():
@@ -46,7 +76,16 @@ def index():
     elif role=="TRAINER":
         return render_template("home-trainer.html")
     elif role=="MEMBER":
-        return render_template("home-member.html")
+        with sqlite3.connect(DB_NAME) as connection:
+            connection.row_factory = sqlite3.Row
+            # TODO
+            member_id = session.get("member_id")
+            gain = connection.execute("select sum(food.calorie_gain) as gain from diet_info left join food on food.food_id=diet_info.food_id where date(timestamp)=date('now', 'localtime') and member_id=?", (member_id,)).fetchone()["gain"] or 0
+            burn = connection.execute("select sum(exercise.calorie_burn) as burn from exercise_info left join exercise on exercise.exercise_id=exercise_info.exercise_id where date(timestamp)=date('now', 'localtime') and member_id=?", (member_id,)).fetchone()["burn"] or 0
+            member_details = connection.execute("select take_goal, burn_goal from member where member_id=?", (member_id,)).fetchone()
+            burn_goal, take_goal = member_details["burn_goal"], member_details["take_goal"]
+            gain_leaderboard, burn_leaderboard = get_leaderboard()
+            return render_template("home-member.html", gain=gain, burn=burn, take_goal=take_goal, burn_goal=burn_goal, gain_leaderboard=gain_leaderboard, burn_leaderboard=burn_leaderboard)
 
 @app.route("/register", methods=["GET", "POST"])
 def register():
@@ -68,8 +107,11 @@ def register():
         target = request.form.get("target")
         height = request.form.get("height")
         weight = request.form.get("weight")
+        BMR = 10*float(weight) + 6.25*float(height) - 120
+        take_goal = int(BMR*1.55)
+        burn_goal = int(take_goal*0.25)
         with sqlite3.connect(DB_NAME) as connection:
-            connection.execute("insert into member (target, height, weight, user_id) values (?, ?, ?, ?)", (target, height, weight, userid))
+            connection.execute("insert into member (target, height, weight, take_goal, burn_goal, user_id) values (?, ?, ?, ?, ?, ?)", (target, height, weight, take_goal, burn_goal, userid))
         return redirect(url_for("login"))
 
 @app.route("/regtrainer", methods=["GET", "POST"])
@@ -103,7 +145,6 @@ def approve_trainer(trainer_id):
     with sqlite3.connect(DB_NAME) as connection:
         connection.execute("update trainer set verified='verified' where trainer_id=?", (trainer_id,))
         name, = connection.execute("select username from trainer left join user on trainer.user_id=user.user_id where trainer_id=?", (trainer_id,)).fetchone()
-        print(name)
     return f'<div class="bg-green-100 text-green-800 p-4 rounded-lg shadow">✅ Trainer @{name} has been approved.</div>'
 
 @app.route('/reject/<int:trainer_id>', methods=['POST'])
@@ -167,22 +208,29 @@ def record():
             return render_template("login.html")
 
     with sqlite3.connect(DB_NAME) as connection:
+        connection.row_factory = sqlite3.Row
         cursor = connection.cursor()
-        foods = [{"id":food[0], "name":food[1], "desc":f"{food[2]} · {food[3]} kcal"} for food in cursor.execute("select * from food").fetchall()]
-        exercises = [{"id":exercise[0], "name":exercise[1], "desc":f"{exercise[2]} sets · {exercise[3]} reps · {exercise[4]} kcal burns"} for exercise in cursor.execute("select * from exercise").fetchall()]
+        foods = [{"id": food["food_id"], "detail": food["food_detail"], "quantity": food["quantity"], "calories": food["calorie_gain"]} for food in connection.execute("select * from food").fetchall()]
+        exercises = [{"id": exercise["exercise_id"], "detail": exercise["exercise_detail"], "sets": exercise["sets"], "reps": exercise["reps"], "calories": exercise["calorie_burn"]} for exercise in connection.execute("select * from exercise").fetchall()]
+
     return render_template("record.html", diets=foods, workouts = exercises)
 
 @app.route("/add-record", methods=["POST"])
 def add_record():
-    if not session.get("username"):
+    if not session.get("username") or not session.get("member_id"):
         response = make_response('', 204)
         response.headers['HX-Redirect'] = url_for("login")
         return response
     record_type = request.form.get("type")
     item = request.form.get("item")
-    
+    with sqlite3.connect(DB_NAME) as connection:
+        member_id = session.get("member_id")
+        if record_type=="diet":
+            connection.execute("insert into diet_info (food_id, member_id, timestamp) values (?, ?, ?)", (item, member_id, datetime.datetime.now().isoformat()))
+        elif record_type=="exercise":
+            connection.execute("insert into exercise_info (exercise_id, member_id, timestamp) values (?, ?, ?)", (item, member_id, datetime.datetime.now().isoformat()))
 
-    
+    get_leaderboard()
     return '<span class="text-sm text-green-600">Added</span>'
 
 @app.route("/logout")
