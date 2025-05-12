@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Forum</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 min-h-screen">
+
+  <!-- Navbar -->
+  <nav class="bg-white shadow px-6 py-4 flex justify-between items-center">
+    <div class="text-xl font-bold text-gray-900">FitnessPro</div>
+    <div class="space-x-6 text-sm font-medium text-gray-700">
+      <a href="{{url_for('index')}}" class="hover:text-gray-900">Home</a>
+      {% if session.get("role")=="MEMBER" %}
+      <a href="{{url_for('record')}}" class="hover:text-gray-900">Record</a>
+      {% endif %}
+      <a href="{{url_for('forum')}}" class="text-gray-900 font-semibold">Forum</a>
+      <a href="{{url_for('wallet')}}" class="hover:text-gray-900">Wallet</a>
+      <a href="{{url_for('logout')}}" class="hover:text-gray-900">Logout</a>
+    </div>
+  </nav>
+
+  <!-- Main Content -->
+  <main class="p-6 max-w-4xl mx-auto space-y-10">
+    <h1 class="text-2xl font-bold text-gray-900">Community Forum</h1>
+
+    <!-- Post Creation Box -->
+    <form action="{{ url_for("forum") }}" method="POST" class="bg-white p-6 rounded-lg shadow space-y-4">
+      <div>
+        <input type="text" name="title" placeholder="Post title..." required
+               class="w-full border border-gray-300 rounded px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+      </div>
+      <div>
+        <textarea name="content" rows="4" placeholder="Share your thoughts..." required
+                  class="w-full border border-gray-300 rounded px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+      </div>
+      <div>
+        <input type="text" name="tag" placeholder="Tag (e.g., Workout, Nutrition)" required
+               class="w-full border border-gray-300 rounded px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+      </div>
+      <div class="flex justify-end">
+        <button type="submit" class="bg-blue-600 text-white px-5 py-2 rounded hover:bg-blue-700 text-sm">
+          Post
+        </button>
+      </div>
+    </form>
+
+    <!-- Posts List -->
+    <div class="space-y-6">
+      <!-- Post 1 -->
+      <div class="bg-white p-6 rounded-lg shadow hover:shadow-md transition">
+        <div class="flex justify-between items-center mb-2 text-sm text-gray-500">
+          <span>
+            Posted by <span class="font-medium text-gray-700">User123</span> |
+            <span class="italic text-blue-600">Workout</span>
+          </span>
+          <span>May 12, 2025 · 9:00 PM</span>
+        </div>
+        <a href="#" class="text-lg font-semibold text-gray-900 hover:text-gray-700">
+          How to increase daily burn effectively?
+        </a>
+      </div>
+
+      <!-- Post 2 -->
+      <div class="bg-white p-6 rounded-lg shadow hover:shadow-md transition">
+        <div class="flex justify-between items-center mb-2 text-sm text-gray-500">
+          <span>
+            Posted by <span class="font-medium text-gray-700">FitGuru</span> |
+            <span class="italic text-green-600">Nutrition</span>
+          </span>
+          <span>May 11, 2025 · 2:45 PM</span>
+        </div>
+        <a href="#" class="text-lg font-semibold text-gray-900 hover:text-gray-700">
+          Best pre-workout meal suggestions?
+        </a>
+      </div>
+
+      <!-- Post 3 -->
+      <div class="bg-white p-6 rounded-lg shadow hover:shadow-md transition">
+        <div class="flex justify-between items-center mb-2 text-sm text-gray-500">
+          <span>
+            Posted by <span class="font-medium text-gray-700">LeanMachine</span> |
+            <span class="italic text-purple-600">Tracking</span>
+          </span>
+          <span>May 10, 2025 · 8:15 AM</span>
+        </div>
+        <a href="#" class="text-lg font-semibold text-gray-900 hover:text-gray-700">
+          Tracking macros with FitnessPro — tips?
+        </a>
+      </div>
+    </div>
+  </main>
+
+</body>
+</html>
+

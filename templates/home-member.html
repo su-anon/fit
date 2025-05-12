@@ -12,10 +12,10 @@
     <nav class="bg-white shadow px-6 py-4 flex justify-between items-center">
       <div class="text-xl font-bold text-gray-900">FitnessPro</div>
       <div class="space-x-6 text-sm font-medium text-gray-700">
-        <a href="{{url_for("index")}}" class="hover:text-gray-900">Home</a>
+        <a href="{{url_for("index")}}" class="text-gray-900 font-semibold">Home</a>
         <a href="{{url_for("record")}}" class="hover:text-gray-900">Record</a>
-        <a href="{{url_for("index")}}" class="hover:text-gray-900">Profile</a>
-        <a href="{{url_for("index")}}" class="hover:text-gray-900">Wallet</a>
+        <a href="{{url_for("forum")}}" class="hover:text-gray-900">Forum</a>
+        <a href="{{url_for("wallet")}}" class="hover:text-gray-900">Wallet</a>
         <a href="{{url_for("logout")}}" class="hover:text-gray-900">Logout</a>
       </div>
     </nav>
@@ -29,7 +29,7 @@
         <ol class="space-y-3">
           {% for record in gain_leaderboard %}
           <li class="flex justify-between text-sm text-gray-700">
-            <span>{{ record[0] }}</span><span>{{ record[1] }} pts</span>
+            <span>{{ record[0] }}</span><span>{{ record[1] }} kcal</span>
           </li>
           {% endfor %}
         </ol>
@@ -40,7 +40,7 @@
         <ol class="space-y-3">
           {% for record in burn_leaderboard %}
           <li class="flex justify-between text-sm text-gray-700">
-            <span>{{ record[0] }}</span><span>{{ record[1] }} pts</span>
+            <span>{{ record[0] }}</span><span>{{ record[1] }} kcal</span>
           </li>
           {% endfor %}
         </ol>
@@ -63,7 +63,7 @@
           </div>
           <div class="bg-white p-6 rounded-lg shadow text-center">
             <h3 class="text-sm font-medium text-gray-600 mb-2">Wallet Balance</h3>
-            <p class="text-2xl font-semibold text-gray-900">$125.50</p>
+            <p class="text-2xl font-semibold text-gray-900">${{balance}}</p>
           </div>
         </div>
       </main>

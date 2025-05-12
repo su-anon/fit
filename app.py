@@ -58,6 +58,14 @@ def get_leaderboard():
                                               """).fetchall()
         return gain_leaderboard, burn_leaderboard
 
+def get_balance(user_id):
+    with sqlite3.connect(DB_NAME) as connection:
+        user_id = str(user_id)
+        connection.row_factory = sqlite3.Row
+        balance = connection.execute("select balance from wallet left join user on user.wallet_id=wallet.wallet_id where user_id=?", (user_id),).fetchone()["balance"]
+        return balance
+
+
 
 
 
@@ -78,14 +86,14 @@ def index():
     elif role=="MEMBER":
         with sqlite3.connect(DB_NAME) as connection:
             connection.row_factory = sqlite3.Row
-            # TODO
             member_id = session.get("member_id")
             gain = connection.execute("select sum(food.calorie_gain) as gain from diet_info left join food on food.food_id=diet_info.food_id where date(timestamp)=date('now', 'localtime') and member_id=?", (member_id,)).fetchone()["gain"] or 0
             burn = connection.execute("select sum(exercise.calorie_burn) as burn from exercise_info left join exercise on exercise.exercise_id=exercise_info.exercise_id where date(timestamp)=date('now', 'localtime') and member_id=?", (member_id,)).fetchone()["burn"] or 0
             member_details = connection.execute("select take_goal, burn_goal from member where member_id=?", (member_id,)).fetchone()
             burn_goal, take_goal = member_details["burn_goal"], member_details["take_goal"]
             gain_leaderboard, burn_leaderboard = get_leaderboard()
-            return render_template("home-member.html", gain=gain, burn=burn, take_goal=take_goal, burn_goal=burn_goal, gain_leaderboard=gain_leaderboard, burn_leaderboard=burn_leaderboard)
+            balance = get_balance(session.get("user_id"))
+            return render_template("home-member.html", gain=gain, burn=burn, take_goal=take_goal, burn_goal=burn_goal, gain_leaderboard=gain_leaderboard, burn_leaderboard=burn_leaderboard, balance=balance)
 
 @app.route("/register", methods=["GET", "POST"])
 def register():
@@ -232,6 +240,21 @@ def add_record():
 
     get_leaderboard()
     return '<span class="text-sm text-green-600">Added</span>'
+
+@app.route("/wallet")
+def wallet():
+    return render_template("wallet.html")
+
+@app.route("/forum", methods=["GET", "POST"])
+def forum():
+    if request.method == "POST":
+        title = request.form["title"]
+        content = request.form["content"]
+        username = session.get("username", "Anonymous")  # fallback just in case
+        return redirect(url_for("forum"))
+    
+    posts = []  # fetch posts from DB
+    return render_template("forum.html", posts=posts)
 
 @app.route("/logout")
 def logout():
