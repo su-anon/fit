@@ -22,4 +22,7 @@ with sqlite3.connect(DB_NAME):
         connection.execute("insert into user (wallet_id) values (?)",str(wallet_id))
         userid = connection.execute("select user_id from user where user.username=?", (username,)).fetchone()[0]
         connection.execute("insert into admin (user_id) values (?)", (userid, ))
+        cursor = connection.execute("insert into wallet (balance) values (?)", (0,))
+        wallet_id = cursor.lastrowid
+        connection.execute("update user set wallet_id=? where user_id=?", (wallet_id, userid))
         print("Admin account created with username: " + username)

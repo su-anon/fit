@@ -61,10 +61,19 @@ schema_queries = [
         wallet_id integer primary key autoincrement,
         balance real
     )''',
+    '''create table if not exists recharge (
+        recharge_id integer primary key autoincrement,
+        amount real,
+        timestamp text,
+        status text,
+        user_id integer,
+        foreign key (user_id) references user(user_id)
+    )''',
     '''create table if not exists post (
         post_id integer primary key autoincrement,
         post_body text,
         user_id integer,
+        author text,
         creation_time text,
         tag text,
         foreign key (user_id) references user(user_id)
@@ -77,27 +86,6 @@ schema_queries = [
         post_id integer,
         foreign key (user_id) references user(user_id),
         foreign key (post_id) references post(post_id)
-    )''',
-    '''create table if not exists topup (
-        topup_id integer primary key autoincrement,
-        wallet_id integer,
-        topup_amount real,
-        topup_time text,
-        foreign key (wallet_id) references wallet(wallet_id)
-    )''',
-    '''create table if not exists payout (
-        payout_id integer primary key autoincrement,
-        wallet_id integer,
-        payout_amount real,
-        payout_time text,
-        foreign key (wallet_id) references wallet(wallet_id)
-    )''',
-    '''create table if not exists withdrawal (
-        withdrawal_id integer primary key autoincrement,
-        wallet_id integer,
-        withdrawal_amount real,
-        withdrawal_time text,
-        foreign key (wallet_id) references wallet(wallet_id)
     )''',
     '''create table if not exists health_info (
         member_id integer,

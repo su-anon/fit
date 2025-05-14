@@ -49,47 +49,21 @@
 
     <!-- Posts List -->
     <div class="space-y-6">
-      <!-- Post 1 -->
+      {% for post in posts %}
       <div class="bg-white p-6 rounded-lg shadow hover:shadow-md transition">
         <div class="flex justify-between items-center mb-2 text-sm text-gray-500">
           <span>
-            Posted by <span class="font-medium text-gray-700">User123</span> |
-            <span class="italic text-blue-600">Workout</span>
+            Posted by <span class="font-medium text-gray-700">{{post.author}}</span> |
+            <span class="italic text-blue-600">{{post.tag}}</span>
           </span>
-          <span>May 12, 2025 · 9:00 PM</span>
+          <span>{{post.creation_time}}</span>
         </div>
         <a href="#" class="text-lg font-semibold text-gray-900 hover:text-gray-700">
-          How to increase daily burn effectively?
+          {{post.title}}
         </a>
       </div>
+      {% endfor %}
 
-      <!-- Post 2 -->
-      <div class="bg-white p-6 rounded-lg shadow hover:shadow-md transition">
-        <div class="flex justify-between items-center mb-2 text-sm text-gray-500">
-          <span>
-            Posted by <span class="font-medium text-gray-700">FitGuru</span> |
-            <span class="italic text-green-600">Nutrition</span>
-          </span>
-          <span>May 11, 2025 · 2:45 PM</span>
-        </div>
-        <a href="#" class="text-lg font-semibold text-gray-900 hover:text-gray-700">
-          Best pre-workout meal suggestions?
-        </a>
-      </div>
-
-      <!-- Post 3 -->
-      <div class="bg-white p-6 rounded-lg shadow hover:shadow-md transition">
-        <div class="flex justify-between items-center mb-2 text-sm text-gray-500">
-          <span>
-            Posted by <span class="font-medium text-gray-700">LeanMachine</span> |
-            <span class="italic text-purple-600">Tracking</span>
-          </span>
-          <span>May 10, 2025 · 8:15 AM</span>
-        </div>
-        <a href="#" class="text-lg font-semibold text-gray-900 hover:text-gray-700">
-          Tracking macros with FitnessPro — tips?
-        </a>
-      </div>
     </div>
   </main>
 

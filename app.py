@@ -5,6 +5,10 @@ import requests
 import sqlite3
 import schema
 import bcrypt
+import json
+
+with open(".secret") as secretfile:
+    secrets = json.load(secretfile)
 
 app = Flask(__name__)
 
@@ -148,14 +152,14 @@ def regtrainer():
             connection.execute("insert into trainer (specializes_in, experience, weight, award, height, verified, user_id) values (?, ?, ?, ?, ?, ?, ?)", (specializes_in, experience, weight, award, height, "pending", userid))
         return redirect(url_for("login"))
 
-@app.route('/approve/<int:trainer_id>', methods=['POST'])
+@app.route("/approve/<int:trainer_id>", methods=["POST"])
 def approve_trainer(trainer_id):
     with sqlite3.connect(DB_NAME) as connection:
         connection.execute("update trainer set verified='verified' where trainer_id=?", (trainer_id,))
         name, = connection.execute("select username from trainer left join user on trainer.user_id=user.user_id where trainer_id=?", (trainer_id,)).fetchone()
     return f'<div class="bg-green-100 text-green-800 p-4 rounded-lg shadow">✅ Trainer @{name} has been approved.</div>'
 
-@app.route('/reject/<int:trainer_id>', methods=['POST'])
+@app.route("/reject/<int:trainer_id>", methods=["POST"])
 def reject_trainer(trainer_id):
     with sqlite3.connect(DB_NAME) as connection:
         connection.execute("update trainer set verified='rejected' where trainer_id=?", (trainer_id,))
@@ -226,8 +230,8 @@ def record():
 @app.route("/add-record", methods=["POST"])
 def add_record():
     if not session.get("username") or not session.get("member_id"):
-        response = make_response('', 204)
-        response.headers['HX-Redirect'] = url_for("login")
+        response = make_response("", 204)
+        response.headers["HX-Redirect"] = url_for("login")
         return response
     record_type = request.form.get("type")
     item = request.form.get("item")
@@ -243,18 +247,86 @@ def add_record():
 
 @app.route("/wallet")
 def wallet():
-    return render_template("wallet.html")
+    balance = get_balance(session.get("user_id"))
+    return render_template("wallet.html", balance=balance)
+
+@app.route("/payment", methods=["POST"])
+def payment():
+    if not session.get("user_id"):
+        return redirect(url_for("login"))
+    amount = request.form.get("amount")
+    with sqlite3.connect(DB_NAME) as connection:
+        cursor = connection.cursor()
+        cursor.execute("insert into recharge (amount, timestamp, status, user_id) values (?, ?, ?, ?)", (str(amount), datetime.datetime.now().isoformat(), "pending", str(session.get("user_id"))))
+        recharge_id = cursor.lastrowid
+    post_data = {
+        "store_id": secrets.get("store_id"),
+        "store_passwd": secrets.get("store_passwd"),
+        "total_amount": amount,
+        "currency": "BDT",
+        "tran_id": recharge_id,
+        "success_url": request.host_url + "success",
+        "fail_url": request.host_url + "fail",
+        "cancel_url": request.host_url + "cancel",
+        "cus_name": session.get("username"),
+        "cus_email": "member@fitnesspro",
+        "cus_add1": "Dhaka",
+        "cus_phone": "01000000000",
+        "shipping_method": "NO",
+        "product_name": "Payment",
+        "product_category": "Payment",
+        "product_profile": "general",
+        "cus_city":"Dhaka",
+        "cus_country":"Bangladesh",
+    }
+
+    response = requests.post(secrets.get("init_url"), data=post_data)
+    response_data = response.json()
+    if response_data["status"] == "SUCCESS":
+        return redirect(response_data["GatewayPageURL"])
+    else:
+        return "Payment initiation failed: " + response_data.get("failedreason", "Unknown error")
+
+@app.route("/success", methods=["POST"])
+def success():
+    val_id = request.form["val_id"]
+    data = {"val_id":val_id, "store_id":secrets.get("store_id"), "store_passwd": secrets.get("store_passwd"), "format":"json"}
+    res = requests.get(secrets.get("valid_url"), params=data)
+    if res.json().get("status")=="VALID":
+        recharge_id = res.json().get("tran_id")
+        amount = res.json().get("store_amount")
+        with sqlite3.connect(DB_NAME) as connection:
+            connection.execute("update recharge set status=? where recharge_id=?", (val_id, recharge_id))
+            connection.execute("update wallet set balance=balance+?", (amount,))
+        return redirect(url_for("wallet")+"?msg=✅ Payment Successful")
+    else:
+        return redirect(url_for("wallet")+"?msg=❌ FRAUD!!!")
+        return ""
+
+@app.route("/fail", methods=["POST"])
+def fail():
+    return redirect(url_for("wallet")+"?msg=❌ Payment Failed")
+
+@app.route("/cancel", methods=["POST"])
+def cancel():
+    return redirect(url_for("wallet")+"?msg=🚫 Payment Cancelled")
 
 @app.route("/forum", methods=["GET", "POST"])
 def forum():
     if request.method == "POST":
-        title = request.form["title"]
-        content = request.form["content"]
-        username = session.get("username", "Anonymous")  # fallback just in case
+        title = request.form.get("title")
+        content = request.form.get("content")
+        tag = request.form.get("tag")
+        user_id = session.get("user_id")
+        author = session.get("username", "Anonymous")
+        with sqlite3.connect(DB_NAME) as connection:
+            connection.execute("insert into post (post_body, user_id, author, creation_time, tag) values (?, ?, ?, ?, ?)", (content, user_id, author, datetime.datetime.now().isoformat(), tag))
         return redirect(url_for("forum"))
-    
-    posts = []  # fetch posts from DB
-    return render_template("forum.html", posts=posts)
+    if request.method == "GET":
+        with sqlite3.connect(DB_NAME) as connection:
+            connection.row_factory = sqlite3.Row
+            posts = connection.execute("select * from post order by creation_time limit 10 offset 0").fetchall()
+        return render_template("forum.html", posts=posts)
 
 @app.route("/logout")
 def logout():

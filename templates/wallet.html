@@ -23,6 +23,12 @@
     </nav>
 
     <!-- Main Content -->
+    {% if request.args.get('msg') %}
+    <div class="bg-blue-100 border border-blue-300 text-blue-800 px-4 py-3 rounded relative max-w-4xl mx-auto mt-6">
+      {{ request.args.get('msg') }}
+    </div>
+    {% endif %}
+
     <main class="p-6 max-w-4xl mx-auto space-y-8">
 
       <h1 class="text-2xl font-bold text-gray-900">Wallet</h1>
@@ -33,38 +39,22 @@
         <p class="text-3xl font-semibold text-gray-900">${{balance}}</p>
       </div>
 
-      <!-- Recent Topups -->
-      <div class="bg-white p-6 rounded-lg shadow">
-        <h3 class="text-lg font-semibold text-gray-800 mb-4">Recent Top-ups</h3>
-        <ul class="divide-y divide-gray-200 text-sm text-gray-700">
-          {% for topup in recent_topups %}
-          <li class="flex justify-between py-2">
-            <span>{{topup.date}}</span>
-            <span>${{topup.amount}}</span>
-          </li>
-          {% endfor %}
-          {% if recent_topups|length == 0 %}
-          <li class="py-2 text-gray-500 text-center">No top-ups yet</li>
-          {% endif %}
-        </ul>
-      </div>
-
       <!-- Recharge Form -->
       <div class="bg-white p-6 rounded-lg shadow">
         <h3 class="text-lg font-semibold text-gray-800 mb-4">Recharge Wallet</h3>
-        <form action="{{url_for('index')}}" method="POST" class="space-y-4">
+        <form action="{{url_for('payment')}}" method="POST" class="space-y-4">
           <input
-            type="number"
-            name="amount"
-            placeholder="Enter amount (e.g. 500)"
-            class="w-full border border-gray-300 rounded-md px-4 py-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-300"
-            required
-          />
+              type="number"
+              name="amount"
+              placeholder="Enter amount (e.g. 500)"
+              class="w-full border border-gray-300 rounded-md px-4 py-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-300"
+              required
+              />
           <button
-            type="submit"
-            class="bg-gray-800 text-white px-6 py-3 rounded-md shadow hover:bg-gray-700 transition"
-          >
-            Recharge
+              type="submit"
+              class="bg-gray-800 text-white px-6 py-3 rounded-md shadow hover:bg-gray-700 transition"
+              >
+              Recharge
           </button>
         </form>
       </div>
